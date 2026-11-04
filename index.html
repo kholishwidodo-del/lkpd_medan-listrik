@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LKPD Interaktif - Medan Listrik</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2pdf for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous"></script>
+    <!-- MathJax for Formulas (Optional but good for Physics) -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" crossorigin="anonymous"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        
+        /* Custom Print/PDF styles */
+        .pdf-container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Input styling for PDF to ensure borders show */
+        input, select, textarea {
+            border: 1px solid #d1d5db !important;
+            background-color: #f9fafb !important;
+            color: #111827 !important;
+        }
+
+        .no-print {
+            display: flex;
+        }
+
+        .pdf-mode .no-print {
+            display: none !important;
+        }
+        
+        .pdf-mode {
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+
+        /* Placeholder untuk contenteditable (Kotak bisa di-paste gambar) */
+        [contenteditable=true]:empty:before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            pointer-events: none;
+            display: block;
+        }
+        
+        /* Membatasi ukuran gambar yang di-paste agar tidak melebihi kotak */
+        [contenteditable=true] img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.25rem;
+            margin-top: 0.5rem;
+            display: block;
+        }
+
+        /* Animations for Electric Field */
+        @keyframes flowOut {
+            from { stroke-dashoffset: 12; }
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes flowIn {
+            from { stroke-dashoffset: 12; }
+            to { stroke-dashoffset: 0; }
+        }
+        .field-line-out {
+            stroke-dasharray: 6 6;
+            animation: flowOut 0.8s linear infinite;
+        }
+        .field-line-in {
+            stroke-dasharray: 6 6;
+            animation: flowIn 0.8s linear infinite;
+        }
+        .charge-pulse {
+            animation: pulseCharge 2s infinite ease-in-out;
+            transform-origin: center;
+        }
+        @keyframes pulseCharge {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Pause animations when generating PDF */
+        .pdf-mode .field-line-out, .pdf-mode .field-line-in, .pdf-mode .charge-pulse {
+            animation: none !important;
+            stroke-dasharray: none !important; /* Make solid again for PDF */
+        }
+        
+        /* Custom Modal */
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.relative{position:relative}.mx-4{margin-left:1rem;margin-right:1rem}.mx-auto{margin-left:auto;margin-right:auto}.my-3{margin-top:0.75rem;margin-bottom:0.75rem}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mr-2{margin-right:0.5rem}.mt-1{margin-top:0.25rem}.mt-2{margin-top:0.5rem}.mt-5{margin-top:1.25rem}.mt-6{margin-top:1.5rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.h-12{height:3rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-full{height:100%}.min-h-\[150px\]{min-height:150px}.min-h-\[160px\]{min-height:160px}.w-12{width:3rem}.w-5{width:1.25rem}.w-6{width:1.5rem}.w-full{width:100%}.w-1\/3{width:33.333333%}.w-2\/3{width:66.666667%}.w-max{width:max-content}.max-w-4xl{max-width:56rem}.max-w-sm{max-width:24rem}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.list-disc{list-style-type:disc}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-center{justify-content:center}.gap-12{gap:3rem}.gap-4{gap:1rem}.gap-2{gap:0.5rem}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.space-y-6 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1.5rem * var(--tw-space-y-reverse))}.space-y-8 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(2rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(2rem * var(--tw-space-y-reverse))}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-md{border-radius:0.375rem}.rounded-xl{border-radius:0.75rem}.rounded{border-radius:0.25rem}.border{border-width:1px}.border-2{border-width:2px}.border-b-2{border-bottom-width:2px}.border-b-4{border-bottom-width:4px}.border-t{border-top-width:1px}.border-dashed{border-style:dashed}.border-none{border-style:none}.border-blue-100{--tw-border-opacity:1;border-color:rgb(219 234 254 / var(--tw-border-opacity, 1))}.border-blue-800{--tw-border-opacity:1;border-color:rgb(30 64 175 / var(--tw-border-opacity, 1))}.border-gray-100{--tw-border-opacity:1;border-color:rgb(243 244 246 / var(--tw-border-opacity, 1))}.border-gray-200{--tw-border-opacity:1;border-color:rgb(229 231 235 / var(--tw-border-opacity, 1))}.border-gray-300{--tw-border-opacity:1;border-color:rgb(209 213 219 / var(--tw-border-opacity, 1))}.border-transparent{border-color:transparent}.bg-blue-100{--tw-bg-opacity:1;background-color:rgb(219 234 254 / var(--tw-bg-opacity, 1))}.bg-blue-50{--tw-bg-opacity:1;background-color:rgb(239 246 255 / var(--tw-bg-opacity, 1))}.bg-blue-50\/50{background-color:rgb(239 246 255 / 0.5)}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-gray-50{--tw-bg-opacity:1;background-color:rgb(249 250 251 / var(--tw-bg-opacity, 1))}.bg-green-100{--tw-bg-opacity:1;background-color:rgb(220 252 231 / var(--tw-bg-opacity, 1))}.bg-red-500{--tw-bg-opacity:1;background-color:rgb(239 68 68 / var(--tw-bg-opacity, 1))}.bg-transparent{background-color:transparent}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-gray-100{--tw-bg-opacity:1;background-color:rgb(243 244 246 / var(--tw-bg-opacity, 1))}.p-2{padding:0.5rem}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.pb-2{padding-bottom:0.5rem}.pb-4{padding-bottom:1rem}.pl-5{padding-left:1.25rem}.pt-4{padding-top:1rem}.text-center{text-align:center}.text-justify{text-align:justify}.text-2xl{font-size:1.5rem;line-height:2rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-normal{font-weight:400}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.italic{font-style:italic}.leading-6{line-height:1.5rem}.tracking-wider{letter-spacing:0.05em}.text-blue-600{--tw-text-opacity:1;color:rgb(37 99 235 / var(--tw-text-opacity, 1))}.text-blue-700{--tw-text-opacity:1;color:rgb(29 78 216 / var(--tw-text-opacity, 1))}.text-blue-800{--tw-text-opacity:1;color:rgb(30 64 175 / var(--tw-text-opacity, 1))}.text-blue-900{--tw-text-opacity:1;color:rgb(30 58 138 / var(--tw-text-opacity, 1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.text-gray-600{--tw-text-opacity:1;color:rgb(75 85 99 / var(--tw-text-opacity, 1))}.text-gray-700{--tw-text-opacity:1;color:rgb(55 65 81 / var(--tw-text-opacity, 1))}.text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity, 1))}.text-gray-900{--tw-text-opacity:1;color:rgb(17 24 39 / var(--tw-text-opacity, 1))}.text-green-600{--tw-text-opacity:1;color:rgb(22 163 74 / var(--tw-text-opacity, 1))}.text-red-600{--tw-text-opacity:1;color:rgb(220 38 38 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-200{transition-duration:200ms}.focus-within\:border-blue-500:focus-within{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.focus-within\:ring-1:focus-within{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus-within\:ring-blue-500:focus-within{--tw-ring-opacity:1;--tw-ring-color:rgb(59 130 246 / var(--tw-ring-opacity, 1))}.hover\:bg-blue-700:hover{--tw-bg-opacity:1;background-color:rgb(29 78 216 / var(--tw-bg-opacity, 1))}.hover\:bg-red-600:hover{--tw-bg-opacity:1;background-color:rgb(220 38 38 / var(--tw-bg-opacity, 1))}.focus\:border-blue-500:focus{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.focus\:ring-blue-500:focus{--tw-ring-opacity:1;--tw-ring-color:rgb(59 130 246 / var(--tw-ring-opacity, 1))}@media (min-width: 640px){.sm\:flex-row{flex-direction:row}.sm\:text-sm{font-size:0.875rem;line-height:1.25rem}}@media (min-width: 768px){.md\:col-span-2{grid-column:span 2 / span 2}.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.md\:p-8{padding:2rem}.md\:text-base{font-size:1rem;line-height:1.5rem}}</style><style type="text/css">.CtxtMenu_InfoClose {  top:.2em; right:.2em;}
+.CtxtMenu_InfoContent {  overflow:auto; text-align:left; font-size:80%;  padding:.4em .6em; border:1px inset; margin:1em 0px;  max-height:20em; max-width:30em; background-color:#EEEEEE;  white-space:normal;}
+.CtxtMenu_Info.CtxtMenu_MousePost {outline:none;}
+.CtxtMenu_Info {  position:fixed; left:50%; width:auto; text-align:center;  border:3px outset; padding:1em 2em; background-color:#DDDDDD;  color:black;  cursor:default; font-family:message-box; font-size:120%;  font-style:normal; text-indent:0; text-transform:none;  line-height:normal; letter-spacing:normal; word-spacing:normal;  word-wrap:normal; white-space:nowrap; float:none; z-index:201;  border-radius: 15px;                     /* Opera 10.5 and IE9 */  -webkit-border-radius:15px;               /* Safari and Chrome */  -moz-border-radius:15px;                  /* Firefox */  -khtml-border-radius:15px;                /* Konqueror */  box-shadow:0px 10px 20px #808080;         /* Opera 10.5 and IE9 */  -webkit-box-shadow:0px 10px 20px #808080; /* Safari 3 & Chrome */  -moz-box-shadow:0px 10px 20px #808080;    /* Forefox 3.5 */  -khtml-box-shadow:0px 10px 20px #808080;  /* Konqueror */  filter:progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color="gray", Positive="true"); /* IE */}
+</style><style type="text/css">.CtxtMenu_MenuClose {  position:absolute;  cursor:pointer;  display:inline-block;  border:2px solid #AAA;  border-radius:18px;  -webkit-border-radius: 18px;             /* Safari and Chrome */  -moz-border-radius: 18px;                /* Firefox */  -khtml-border-radius: 18px;              /* Konqueror */  font-family: "Courier New", Courier;  font-size:24px;  color:#F0F0F0}
+.CtxtMenu_MenuClose span {  display:block; background-color:#AAA; border:1.5px solid;  border-radius:18px;  -webkit-border-radius: 18px;             /* Safari and Chrome */  -moz-border-radius: 18px;                /* Firefox */  -khtml-border-radius: 18px;              /* Konqueror */  line-height:0;  padding:8px 0 6px     /* may need to be browser-specific */}
+.CtxtMenu_MenuClose:hover {  color:white!important;  border:2px solid #CCC!important}
+.CtxtMenu_MenuClose:hover span {  background-color:#CCC!important}
+.CtxtMenu_MenuClose:hover:focus {  outline:none}
+</style><style type="text/css">.CtxtMenu_Menu {  position:absolute;  background-color:white;  color:black;  width:auto; padding:5px 0px;  border:1px solid #CCCCCC; margin:0; cursor:default;  font: menu; text-align:left; text-indent:0; text-transform:none;  line-height:normal; letter-spacing:normal; word-spacing:normal;  word-wrap:normal; white-space:nowrap; float:none; z-index:201;  border-radius: 5px;                     /* Opera 10.5 and IE9 */  -webkit-border-radius: 5px;             /* Safari and Chrome */  -moz-border-radius: 5px;                /* Firefox */  -khtml-border-radius: 5px;              /* Konqueror */  box-shadow:0px 10px 20px #808080;         /* Opera 10.5 and IE9 */  -webkit-box-shadow:0px 10px 20px #808080; /* Safari 3 & Chrome */  -moz-box-shadow:0px 10px 20px #808080;    /* Forefox 3.5 */  -khtml-box-shadow:0px 10px 20px #808080;  /* Konqueror */}
+.CtxtMenu_MenuItem {  padding: 1px 2em;  background:transparent;}
+.CtxtMenu_MenuArrow {  position:absolute; right:.5em; padding-top:.25em; color:#666666;  font-family: null; font-size: .75em}
+.CtxtMenu_MenuActive .CtxtMenu_MenuArrow {color:white}
+.CtxtMenu_MenuArrow.CtxtMenu_RTL {left:.5em; right:auto}
+.CtxtMenu_MenuCheck {  position:absolute; left:.7em;  font-family: null}
+.CtxtMenu_MenuCheck.CtxtMenu_RTL { right:.7em; left:auto }
+.CtxtMenu_MenuRadioCheck {  position:absolute; left: .7em;}
+.CtxtMenu_MenuRadioCheck.CtxtMenu_RTL {  right: .7em; left:auto}
+.CtxtMenu_MenuInputBox {  padding-left: 1em; right:.5em; color:#666666;  font-family: null;}
+.CtxtMenu_MenuInputBox.CtxtMenu_RTL {  left: .1em;}
+.CtxtMenu_MenuComboBox {  left:.1em; padding-bottom:.5em;}
+.CtxtMenu_MenuSlider {  left: .1em;}
+.CtxtMenu_SliderValue {  position:absolute; right:.1em; padding-top:.25em; color:#333333;  font-size: .75em}
+.CtxtMenu_SliderBar {  outline: none; background: #d3d3d3}
+.CtxtMenu_MenuLabel {  padding: 1px 2em 3px 1.33em;  font-style:italic}
+.CtxtMenu_MenuRule {  border-top: 1px solid #DDDDDD;  margin: 4px 3px;}
+.CtxtMenu_MenuDisabled {  color:GrayText}
+.CtxtMenu_MenuActive {  background-color: #606872;  color: white;}
+.CtxtMenu_MenuDisabled:focus {  background-color: #E8E8E8}
+.CtxtMenu_MenuLabel:focus {  background-color: #E8E8E8}
+.CtxtMenu_ContextMenu:focus {  outline:none}
+.CtxtMenu_ContextMenu .CtxtMenu_MenuItem:focus {  outline:none}
+.CtxtMenu_SelectionMenu {  position:relative; float:left;  border-bottom: none; -webkit-box-shadow:none; -webkit-border-radius:0px; }
+.CtxtMenu_SelectionItem {  padding-right: 1em;}
+.CtxtMenu_Selection {  right: 40%; width:50%; }
+.CtxtMenu_SelectionBox {  padding: 0em; max-height:20em; max-width: none;  background-color:#FFFFFF;}
+.CtxtMenu_SelectionDivider {  clear: both; border-top: 2px solid #000000;}
+.CtxtMenu_Menu .CtxtMenu_MenuClose {  top:-10px; left:-10px}
+</style><style id="MJX-CHTML-styles">
+mjx-container[jax="CHTML"] {
+  line-height: 0;
+}
+
+mjx-container [space="1"] {
+  margin-left: .111em;
+}
+
+mjx-container [space="2"] {
+  margin-left: .167em;
+}
+
+mjx-container [space="3"] {
+  margin-left: .222em;
+}
+
+mjx-container [space="4"] {
+  margin-left: .278em;
+}
+
+mjx-container [space="5"] {
+  margin-left: .333em;
+}
+
+mjx-container [rspace="1"] {
+  margin-right: .111em;
+}
+
+mjx-container [rspace="2"] {
+  margin-right: .167em;
+}
+
+mjx-container [rspace="3"] {
+  margin-right: .222em;
+}
+
+mjx-container [rspace="4"] {
+  margin-right: .278em;
+}
+
+mjx-container [rspace="5"] {
+  margin-right: .333em;
+}
+
+mjx-container [size="s"] {
+  font-size: 70.7%;
+}
+
+mjx-container [size="ss"] {
+  font-size: 50%;
+}
+
+mjx-container [size="Tn"] {
+  font-size: 60%;
+}
+
+mjx-container [size="sm"] {
+  font-size: 85%;
+}
+
+mjx-container [size="lg"] {
+  font-size: 120%;
+}
+
+mjx-container [size="Lg"] {
+  font-size: 144%;
+}
+
+mjx-container [size="LG"] {
+  font-size: 173%;
+}
+
+mjx-container [size="hg"] {
+  font-size: 207%;
+}
+
+mjx-container [size="HG"] {
+  font-size: 249%;
+}
+
+mjx-container [width="full"] {
+  width: 100%;
+}
+
+mjx-box {
+  display: inline-block;
+}
+
+mjx-block {
+  display: block;
+}
+
+mjx-itable {
+  display: inline-table;
+}
+
+mjx-row {
+  display: table-row;
+}
+
+mjx-row > * {
+  display: table-cell;
+}
+
+mjx-mtext {
+  display: inline-block;
+  text-align: left;
+}
+
+mjx-mstyle {
+  display: inline-block;
+}
+
+mjx-merror {
+  display: inline-block;
+  color: red;
+  background-color: yellow;
+}
+
+mjx-mphantom {
+  visibility: hidden;
+}
+
+_::-webkit-full-page-media, _:future, :root mjx-container {
+  will-change: opacity;
+}
+
+mjx-assistive-mml {
+  position: absolute !important;
+  top: 0px;
+  left: 0px;
+  clip: rect(1px, 1px, 1px, 1px);
+  padding: 1px 0px 0px 0px !important;
+  border: 0px !important;
+  display: block !important;
+  width: auto !important;
+  overflow: hidden !important;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+mjx-assistive-mml[display="block"] {
+  width: 100% !important;
+}
+
+mjx-math {
+  display: inline-block;
+  text-align: left;
+  line-height: 0;
+  text-indent: 0;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 100%;
+  font-size-adjust: none;
+  letter-spacing: normal;
+  border-collapse: collapse;
+  word-wrap: normal;
+  word-spacing: normal;
+  white-space: nowrap;
+  direction: ltr;
+  padding: 1px 0;
+}
+
+mjx-container[jax="CHTML"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="CHTML"][display="true"][width="full"] {
+  display: flex;
+}
+
+mjx-container[jax="CHTML"][display="true"] mjx-math {
+  padding: 0;
+}
+
+mjx-container[jax="CHTML"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="CHTML"][justify="right"] {
+  text-align: right;
+}
+
+mjx-mi {
+  display: inline-block;
+  text-align: left;
+}
+
+mjx-c {
+  display: inline-block;
+}
+
+mjx-utext {
+  display: inline-block;
+  padding: .75em 0 .2em 0;
+}
+
+mjx-mo {
+  display: inline-block;
+  text-align: left;
+}
+
+mjx-stretchy-h {
+  display: inline-table;
+  width: 100%;
+}
+
+mjx-stretchy-h > * {
+  display: table-cell;
+  width: 0;
+}
+
+mjx-stretchy-h > * > mjx-c {
+  display: inline-block;
+  transform: scalex(1.0000001);
+}
+
+mjx-stretchy-h > * > mjx-c::before {
+  display: inline-block;
+  width: initial;
+}
+
+mjx-stretchy-h > mjx-ext {
+  /* IE */ overflow: hidden;
+  /* others */ overflow: clip visible;
+  width: 100%;
+}
+
+mjx-stretchy-h > mjx-ext > mjx-c::before {
+  transform: scalex(500);
+}
+
+mjx-stretchy-h > mjx-ext > mjx-c {
+  width: 0;
+}
+
+mjx-stretchy-h > mjx-beg > mjx-c {
+  margin-right: -.1em;
+}
+
+mjx-stretchy-h > mjx-end > mjx-c {
+  margin-left: -.1em;
+}
+
+mjx-stretchy-v {
+  display: inline-block;
+}
+
+mjx-stretchy-v > * {
+  display: block;
+}
+
+mjx-stretchy-v > mjx-beg {
+  height: 0;
+}
+
+mjx-stretchy-v > mjx-end > mjx-c {
+  display: block;
+}
+
+mjx-stretchy-v > * > mjx-c {
+  transform: scaley(1.0000001);
+  transform-origin: left center;
+  overflow: hidden;
+}
+
+mjx-stretchy-v > mjx-ext {
+  display: block;
+  height: 100%;
+  box-sizing: border-box;
+  border: 0px solid transparent;
+  /* IE */ overflow: hidden;
+  /* others */ overflow: visible clip;
+}
+
+mjx-stretchy-v > mjx-ext > mjx-c::before {
+  width: initial;
+  box-sizing: border-box;
+}
+
+mjx-stretchy-v > mjx-ext > mjx-c {
+  transform: scaleY(500) translateY(.075em);
+  overflow: visible;
+}
+
+mjx-mark {
+  display: inline-block;
+  height: 0px;
+}
+
+mjx-mfrac {
+  display: inline-block;
+  text-align: left;
+}
+
+mjx-frac {
+  display: inline-block;
+  vertical-align: 0.17em;
+  padding: 0 .22em;
+}
+
+mjx-frac[type="d"] {
+  vertical-align: .04em;
+}
+
+mjx-frac[delims] {
+  padding: 0 .1em;
+}
+
+mjx-frac[atop] {
+  padding: 0 .12em;
+}
+
+mjx-frac[atop][delims] {
+  padding: 0;
+}
+
+mjx-dtable {
+  display: inline-table;
+  width: 100%;
+}
+
+mjx-dtable > * {
+  font-size: 2000%;
+}
+
+mjx-dbox {
+  display: block;
+  font-size: 5%;
+}
+
+mjx-num {
+  display: block;
+  text-align: center;
+}
+
+mjx-den {
+  display: block;
+  text-align: center;
+}
+
+mjx-mfrac[bevelled] > mjx-num {
+  display: inline-block;
+}
+
+mjx-mfrac[bevelled] > mjx-den {
+  display: inline-block;
+}
+
+mjx-den[align="right"], mjx-num[align="right"] {
+  text-align: right;
+}
+
+mjx-den[align="left"], mjx-num[align="left"] {
+  text-align: left;
+}
+
+mjx-nstrut {
+  display: inline-block;
+  height: .054em;
+  width: 0;
+  vertical-align: -.054em;
+}
+
+mjx-nstrut[type="d"] {
+  height: .217em;
+  vertical-align: -.217em;
+}
+
+mjx-dstrut {
+  display: inline-block;
+  height: .505em;
+  width: 0;
+}
+
+mjx-dstrut[type="d"] {
+  height: .726em;
+}
+
+mjx-line {
+  display: block;
+  box-sizing: border-box;
+  min-height: 1px;
+  height: .06em;
+  border-top: .06em solid;
+  margin: .06em -.1em;
+  overflow: hidden;
+}
+
+mjx-line[type="d"] {
+  margin: .18em -.1em;
+}
+
+mjx-msup {
+  display: inline-block;
+  text-align: left;
+}
+
+mjx-mn {
+  display: inline-block;
+  text-align: left;
+}
+
+mjx-mspace {
+  display: inline-block;
+  text-align: left;
+}
+
+mjx-TeXAtom {
+  display: inline-block;
+  text-align: left;
+}
+
+mjx-c::before {
+  display: block;
+  width: 0;
+}
+
+.MJX-TEX {
+  font-family: MJXZERO, MJXTEX;
+}
+
+.TEX-B {
+  font-family: MJXZERO, MJXTEX-B;
+}
+
+.TEX-I {
+  font-family: MJXZERO, MJXTEX-I;
+}
+
+.TEX-MI {
+  font-family: MJXZERO, MJXTEX-MI;
+}
+
+.TEX-BI {
+  font-family: MJXZERO, MJXTEX-BI;
+}
+
+.TEX-S1 {
+  font-family: MJXZERO, MJXTEX-S1;
+}
+
+.TEX-S2 {
+  font-family: MJXZERO, MJXTEX-S2;
+}
+
+.TEX-S3 {
+  font-family: MJXZERO, MJXTEX-S3;
+}
+
+.TEX-S4 {
+  font-family: MJXZERO, MJXTEX-S4;
+}
+
+.TEX-A {
+  font-family: MJXZERO, MJXTEX-A;
+}
+
+.TEX-C {
+  font-family: MJXZERO, MJXTEX-C;
+}
+
+.TEX-CB {
+  font-family: MJXZERO, MJXTEX-CB;
+}
+
+.TEX-FR {
+  font-family: MJXZERO, MJXTEX-FR;
+}
+
+.TEX-FRB {
+  font-family: MJXZERO, MJXTEX-FRB;
+}
+
+.TEX-SS {
+  font-family: MJXZERO, MJXTEX-SS;
+}
+
+.TEX-SSB {
+  font-family: MJXZERO, MJXTEX-SSB;
+}
+
+.TEX-SSI {
+  font-family: MJXZERO, MJXTEX-SSI;
+}
+
+.TEX-SC {
+  font-family: MJXZERO, MJXTEX-SC;
+}
+
+.TEX-T {
+  font-family: MJXZERO, MJXTEX-T;
+}
+
+.TEX-V {
+  font-family: MJXZERO, MJXTEX-V;
+}
+
+.TEX-VB {
+  font-family: MJXZERO, MJXTEX-VB;
+}
+
+mjx-stretchy-v mjx-c, mjx-stretchy-h mjx-c {
+  font-family: MJXZERO, MJXTEX-S1, MJXTEX-S4, MJXTEX, MJXTEX-A ! important;
+}
+
+@font-face /* 0 */ {
+  font-family: MJXZERO;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Zero.woff") format("woff");
+}
+
+@font-face /* 1 */ {
+  font-family: MJXTEX;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Main-Regular.woff") format("woff");
+}
+
+@font-face /* 2 */ {
+  font-family: MJXTEX-B;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Main-Bold.woff") format("woff");
+}
+
+@font-face /* 3 */ {
+  font-family: MJXTEX-I;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Math-Italic.woff") format("woff");
+}
+
+@font-face /* 4 */ {
+  font-family: MJXTEX-MI;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Main-Italic.woff") format("woff");
+}
+
+@font-face /* 5 */ {
+  font-family: MJXTEX-BI;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Math-BoldItalic.woff") format("woff");
+}
+
+@font-face /* 6 */ {
+  font-family: MJXTEX-S1;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Size1-Regular.woff") format("woff");
+}
+
+@font-face /* 7 */ {
+  font-family: MJXTEX-S2;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Size2-Regular.woff") format("woff");
+}
+
+@font-face /* 8 */ {
+  font-family: MJXTEX-S3;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Size3-Regular.woff") format("woff");
+}
+
+@font-face /* 9 */ {
+  font-family: MJXTEX-S4;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Size4-Regular.woff") format("woff");
+}
+
+@font-face /* 10 */ {
+  font-family: MJXTEX-A;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_AMS-Regular.woff") format("woff");
+}
+
+@font-face /* 11 */ {
+  font-family: MJXTEX-C;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Calligraphic-Regular.woff") format("woff");
+}
+
+@font-face /* 12 */ {
+  font-family: MJXTEX-CB;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Calligraphic-Bold.woff") format("woff");
+}
+
+@font-face /* 13 */ {
+  font-family: MJXTEX-FR;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Fraktur-Regular.woff") format("woff");
+}
+
+@font-face /* 14 */ {
+  font-family: MJXTEX-FRB;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Fraktur-Bold.woff") format("woff");
+}
+
+@font-face /* 15 */ {
+  font-family: MJXTEX-SS;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_SansSerif-Regular.woff") format("woff");
+}
+
+@font-face /* 16 */ {
+  font-family: MJXTEX-SSB;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_SansSerif-Bold.woff") format("woff");
+}
+
+@font-face /* 17 */ {
+  font-family: MJXTEX-SSI;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_SansSerif-Italic.woff") format("woff");
+}
+
+@font-face /* 18 */ {
+  font-family: MJXTEX-SC;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Script-Regular.woff") format("woff");
+}
+
+@font-face /* 19 */ {
+  font-family: MJXTEX-T;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Typewriter-Regular.woff") format("woff");
+}
+
+@font-face /* 20 */ {
+  font-family: MJXTEX-V;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Vector-Regular.woff") format("woff");
+}
+
+@font-face /* 21 */ {
+  font-family: MJXTEX-VB;
+  src: url("https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Vector-Bold.woff") format("woff");
+}
+
+mjx-c.mjx-c1D438.TEX-I::before {
+  padding: 0.68em 0.764em 0 0;
+  content: "E";
+}
+
+mjx-c.mjx-c3D::before {
+  padding: 0.583em 0.778em 0.082em 0;
+  content: "=";
+}
+
+mjx-c.mjx-c1D458.TEX-I::before {
+  padding: 0.694em 0.521em 0.011em 0;
+  content: "k";
+}
+
+mjx-c.mjx-c1D45E.TEX-I::before {
+  padding: 0.442em 0.46em 0.194em 0;
+  content: "q";
+}
+
+mjx-c.mjx-c1D45F.TEX-I::before {
+  padding: 0.442em 0.451em 0.011em 0;
+  content: "r";
+}
+
+mjx-c.mjx-c32::before {
+  padding: 0.666em 0.5em 0 0;
+  content: "2";
+}
+
+mjx-c.mjx-c1D439.TEX-I::before {
+  padding: 0.68em 0.749em 0 0;
+  content: "F";
+}
+
+mjx-c.mjx-c39::before {
+  padding: 0.666em 0.5em 0.022em 0;
+  content: "9";
+}
+
+mjx-c.mjx-cD7::before {
+  padding: 0.491em 0.778em 0 0;
+  content: "\D7";
+}
+
+mjx-c.mjx-c31::before {
+  padding: 0.666em 0.5em 0 0;
+  content: "1";
+}
+
+mjx-c.mjx-c30::before {
+  padding: 0.666em 0.5em 0.022em 0;
+  content: "0";
+}
+
+mjx-c.mjx-c4E::before {
+  padding: 0.683em 0.75em 0 0;
+  content: "N";
+}
+
+mjx-c.mjx-c6D::before {
+  padding: 0.442em 0.833em 0 0;
+  content: "m";
+}
+
+mjx-c.mjx-c2F::before {
+  padding: 0.75em 0.5em 0.25em 0;
+  content: "/";
+}
+
+mjx-c.mjx-c43::before {
+  padding: 0.705em 0.722em 0.021em 0;
+  content: "C";
+}
+
+mjx-c.mjx-c2212::before {
+  padding: 0.583em 0.778em 0.082em 0;
+  content: "\2212";
+}
+
+mjx-c.mjx-c36::before {
+  padding: 0.666em 0.5em 0.022em 0;
+  content: "6";
+}
+</style></head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        
+        <!-- Main LKPD Container (This part gets converted to PDF) -->
+        <div id="lkpd-document" class="pdf-container mb-8 relative">
+            
+            <!-- Header section -->
+            <div class="text-center border-b-4 border-blue-800 pb-4 mb-6">
+                <h1 class="text-2xl font-bold text-gray-800 uppercase tracking-wider">Lembar Kerja Peserta Didik (LKPD)</h1>
+                <h2 class="text-xl font-semibold text-blue-700 mt-1">Mata Pelajaran IPA Kelas IX</h2>
+                <h3 class="text-lg font-medium text-gray-600">MTsN 1 Kota Malang</h3>
+                <p class="text-sm text-gray-500 mt-2 font-semibold bg-blue-100 inline-block px-3 py-1 rounded-full">Materi: Medan Listrik</p>
+            </div>
+
+            <form id="lkpd-form" class="space-y-8">
+                
+                <!-- Group Identity Section -->
+                <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                    <h3 class="text-lg font-bold text-blue-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        Identitas Kelompok
+                    </h3>
+                    <p class="text-xs text-gray-500 mb-4 italic">*Pilih kelas terlebih dahulu, kemudian pilih nama anggota. Nomor presensi akan terisi otomatis.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="group-members-container">
+                        <!-- Student Rows will be generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Theory/Intro Section -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2">A. Tujuan Pembelajaran</h3>
+                    <ul class="list-disc pl-5 text-gray-700 space-y-1">
+                        <li>Siswa dapat mendeskripsikan pengertian medan listrik.</li>
+                        <li>Siswa dapat menggambarkan arah garis gaya listrik.</li>
+                        <li>Siswa dapat menghitung besar kuat medan listrik.</li>
+                    </ul>
+                </div>
+
+                <!-- Dasar Teori Section -->
+                <div class="space-y-4 bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                    <h3 class="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2">B. Dasar Teori</h3>
+                    <div class="text-gray-700 space-y-3 text-sm md:text-base text-justify">
+                        <p><strong>Medan Listrik</strong> adalah ruang atau daerah di sekitar muatan listrik yang masih dipengaruhi oleh gaya listrik. Jika sebuah muatan uji diletakkan di dalam daerah tersebut, maka muatan uji itu akan mengalami gaya tolak atau gaya tarik.</p>
+                        <p>Medan listrik digambarkan secara visual menggunakan <strong>garis-garis gaya listrik</strong>. Sifat-sifat garis gaya listrik antara lain:</p>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li>Arah garis gaya listrik selalu <strong>keluar dari muatan positif</strong> dan <strong>masuk ke muatan negatif</strong>.</li>
+                            <li>Garis-garis gaya listrik tidak pernah saling berpotongan.</li>
+                            <li>Semakin rapat garis gaya listrik, semakin kuat medan listrik di daerah tersebut.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Persamaan Kuat Medan Listrik -->
+                    <div class="mt-5 p-5 bg-blue-50 rounded-xl border border-blue-100">
+                        <p class="font-semibold text-gray-800 mb-2">Persamaan Kuat Medan Listrik:</p>
+                        <div class="text-center text-lg my-3 font-semibold text-blue-900">
+                            <mjx-container class="MathJax CtxtMenu_Attached_0" jax="CHTML" style="font-size: 123.6%; position: relative;" tabindex="0" ctxtmenu_counter="0"><mjx-math class="MJX-TEX" aria-hidden="true"><mjx-mi class="mjx-i"><mjx-c class="mjx-c1D438 TEX-I"></mjx-c></mjx-mi><mjx-mo class="mjx-n" space="4"><mjx-c class="mjx-c3D"></mjx-c></mjx-mo><mjx-mi class="mjx-i" space="4"><mjx-c class="mjx-c1D458 TEX-I"></mjx-c></mjx-mi><mjx-mfrac><mjx-frac><mjx-num><mjx-nstrut></mjx-nstrut><mjx-mi class="mjx-i" size="s"><mjx-c class="mjx-c1D45E TEX-I"></mjx-c></mjx-mi></mjx-num><mjx-dbox><mjx-dtable><mjx-line></mjx-line><mjx-row><mjx-den><mjx-dstrut></mjx-dstrut><mjx-msup size="s"><mjx-mi class="mjx-i"><mjx-c class="mjx-c1D45F TEX-I"></mjx-c></mjx-mi><mjx-script style="vertical-align: 0.289em;"><mjx-mn class="mjx-n" size="s"><mjx-c class="mjx-c32"></mjx-c></mjx-mn></mjx-script></mjx-msup></mjx-den></mjx-row></mjx-dtable></mjx-dbox></mjx-frac></mjx-mfrac></mjx-math><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>E</mi><mo>=</mo><mi>k</mi><mfrac><mi>q</mi><msup><mi>r</mi><mn>2</mn></msup></mfrac></math></mjx-assistive-mml></mjx-container> &nbsp; atau &nbsp; <mjx-container class="MathJax CtxtMenu_Attached_0" jax="CHTML" style="font-size: 123.6%; position: relative;" tabindex="0" ctxtmenu_counter="1"><mjx-math class="MJX-TEX" aria-hidden="true"><mjx-mi class="mjx-i"><mjx-c class="mjx-c1D438 TEX-I"></mjx-c></mjx-mi><mjx-mo class="mjx-n" space="4"><mjx-c class="mjx-c3D"></mjx-c></mjx-mo><mjx-mfrac space="4"><mjx-frac><mjx-num><mjx-nstrut></mjx-nstrut><mjx-mi class="mjx-i" size="s"><mjx-c class="mjx-c1D439 TEX-I"></mjx-c></mjx-mi></mjx-num><mjx-dbox><mjx-dtable><mjx-line></mjx-line><mjx-row><mjx-den><mjx-dstrut></mjx-dstrut><mjx-mi class="mjx-i" size="s"><mjx-c class="mjx-c1D45E TEX-I"></mjx-c></mjx-mi></mjx-den></mjx-row></mjx-dtable></mjx-dbox></mjx-frac></mjx-mfrac></mjx-math><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>E</mi><mo>=</mo><mfrac><mi>F</mi><mi>q</mi></mfrac></math></mjx-assistive-mml></mjx-container>
+                        </div>
+                        <p class="text-sm text-gray-700 font-medium mb-1">Keterangan:</p>
+                        <ul class="text-sm text-gray-700 space-y-1 grid grid-cols-1 md:grid-cols-2">
+                            <li><strong>E</strong> = Kuat medan listrik (N/C)</li>
+                            <li><strong>F</strong> = Gaya Coulomb (N)</li>
+                            <li><strong>q</strong> = Muatan listrik (C)</li>
+                            <li><strong>r</strong> = Jarak titik ke muatan (m)</li>
+                            <li class="md:col-span-2"><strong>k</strong> = Konstanta (<mjx-container class="MathJax CtxtMenu_Attached_0" jax="CHTML" style="font-size: 123.6%; position: relative;" tabindex="0" ctxtmenu_counter="2"><mjx-math class="MJX-TEX" aria-hidden="true"><mjx-mn class="mjx-n"><mjx-c class="mjx-c39"></mjx-c></mjx-mn><mjx-mo class="mjx-n" space="3"><mjx-c class="mjx-cD7"></mjx-c></mjx-mo><mjx-msup space="3"><mjx-mn class="mjx-n"><mjx-c class="mjx-c31"></mjx-c><mjx-c class="mjx-c30"></mjx-c></mjx-mn><mjx-script style="vertical-align: 0.393em;"><mjx-mn class="mjx-n" size="s"><mjx-c class="mjx-c39"></mjx-c></mjx-mn></mjx-script></mjx-msup><mjx-mstyle><mjx-mspace style="width: 0.167em;"></mjx-mspace></mjx-mstyle><mjx-msup><mjx-mtext class="mjx-n"><mjx-c class="mjx-c4E"></mjx-c><mjx-c class="mjx-c6D"></mjx-c></mjx-mtext><mjx-script style="vertical-align: 0.41em;"><mjx-mn class="mjx-n" size="s"><mjx-c class="mjx-c32"></mjx-c></mjx-mn></mjx-script></mjx-msup><mjx-texatom texclass="ORD"><mjx-mo class="mjx-n"><mjx-c class="mjx-c2F"></mjx-c></mjx-mo></mjx-texatom><mjx-msup><mjx-mtext class="mjx-n"><mjx-c class="mjx-c43"></mjx-c></mjx-mtext><mjx-script style="vertical-align: 0.432em;"><mjx-mn class="mjx-n" size="s"><mjx-c class="mjx-c32"></mjx-c></mjx-mn></mjx-script></mjx-msup></mjx-math><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML"><mn>9</mn><mo>×</mo><msup><mn>10</mn><mn>9</mn></msup><mstyle scriptlevel="0"><mspace width="0.167em"></mspace></mstyle><msup><mtext>Nm</mtext><mn>2</mn></msup><mrow data-mjx-texclass="ORD"><mo>/</mo></mrow><msup><mtext>C</mtext><mn>2</mn></msup></math></mjx-assistive-mml></mjx-container>)</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Visualisasi SVG Garis Gaya Listrik -->
+                    <div class="flex flex-col sm:flex-row justify-center items-center gap-12 mt-6 pt-4 border-t border-gray-100">
+                        <!-- Muatan Positif -->
+                        <div class="text-center">
+                            <svg width="120" height="120" viewBox="0 0 100 100" class="mx-auto">
+                                <defs>
+                                    <marker id="arrow-red" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"></path>
+                                    </marker>
+                                </defs>
+                                <!-- Garis keluar (Positif) - Animated -->
+                                <line x1="50" y1="34" x2="50" y2="8" stroke="#ef4444" stroke-width="2.5" marker-end="url(#arrow-red)" class="field-line-out"></line>
+                                <line x1="61" y1="39" x2="82" y2="18" stroke="#ef4444" stroke-width="2.5" marker-end="url(#arrow-red)" class="field-line-out"></line>
+                                <line x1="66" y1="50" x2="92" y2="50" stroke="#ef4444" stroke-width="2.5" marker-end="url(#arrow-red)" class="field-line-out"></line>
+                                <line x1="61" y1="61" x2="82" y2="82" stroke="#ef4444" stroke-width="2.5" marker-end="url(#arrow-red)" class="field-line-out"></line>
+                                <line x1="50" y1="66" x2="50" y2="92" stroke="#ef4444" stroke-width="2.5" marker-end="url(#arrow-red)" class="field-line-out"></line>
+                                <line x1="39" y1="61" x2="18" y2="82" stroke="#ef4444" stroke-width="2.5" marker-end="url(#arrow-red)" class="field-line-out"></line>
+                                <line x1="34" y1="50" x2="8" y2="50" stroke="#ef4444" stroke-width="2.5" marker-end="url(#arrow-red)" class="field-line-out"></line>
+                                <line x1="39" y1="39" x2="18" y2="18" stroke="#ef4444" stroke-width="2.5" marker-end="url(#arrow-red)" class="field-line-out"></line>
+                                <!-- Lingkaran Muatan Positif -->
+                                <circle cx="50" cy="50" r="16" fill="#ef4444" stroke="#b91c1c" stroke-width="2" class="charge-pulse"></circle>
+                                <text x="50" y="56.5" fill="white" font-size="22" font-family="Arial" font-weight="bold" text-anchor="middle" class="charge-pulse">+</text>
+                            </svg>
+                            <p class="text-sm font-semibold text-red-600 mt-2">Muatan Positif</p>
+                            <p class="text-xs text-gray-500">(Garis Keluar)</p>
+                        </div>
+
+                        <!-- Muatan Negatif -->
+                        <div class="text-center">
+                            <svg width="120" height="120" viewBox="0 0 100 100" class="mx-auto">
+                                <defs>
+                                    <marker id="arrow-blue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6"></path>
+                                    </marker>
+                                </defs>
+                                <!-- Garis masuk (Negatif) - Animated -->
+                                <line x1="50" y1="8" x2="50" y2="32" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arrow-blue)" class="field-line-in"></line>
+                                <line x1="82" y1="18" x2="63" y2="37" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arrow-blue)" class="field-line-in"></line>
+                                <line x1="92" y1="50" x2="68" y2="50" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arrow-blue)" class="field-line-in"></line>
+                                <line x1="82" y1="82" x2="63" y2="63" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arrow-blue)" class="field-line-in"></line>
+                                <line x1="50" y1="92" x2="50" y2="68" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arrow-blue)" class="field-line-in"></line>
+                                <line x1="18" y1="82" x2="37" y2="63" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arrow-blue)" class="field-line-in"></line>
+                                <line x1="8" y1="50" x2="32" y2="50" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arrow-blue)" class="field-line-in"></line>
+                                <line x1="18" y1="18" x2="37" y2="37" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arrow-blue)" class="field-line-in"></line>
+                                <!-- Lingkaran Muatan Negatif -->
+                                <circle cx="50" cy="50" r="16" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2" class="charge-pulse"></circle>
+                                <text x="50" y="55" fill="white" font-size="26" font-family="Arial" font-weight="bold" text-anchor="middle" class="charge-pulse">-</text>
+                            </svg>
+                            <p class="text-sm font-semibold text-blue-600 mt-2">Muatan Negatif</p>
+                            <p class="text-xs text-gray-500">(Garis Masuk)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Questions Section -->
+                <div class="space-y-6">
+                    <h3 class="text-lg font-bold text-gray-800 border-b-2 border-gray-200 pb-2">C. Pertanyaan &amp; Diskusi</h3>
+                    
+                    <!-- Soal 1 -->
+                    <div class="space-y-2">
+                        <label class="block font-semibold text-gray-800">1. Jelaskan menurut bahasa kalian sendiri, apa yang dimaksud dengan Medan Listrik?</label>
+                        <textarea name="jawaban_1" rows="3" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3" placeholder="Tuliskan jawaban kelompokmu di sini..." required=""></textarea>
+                    </div>
+
+                    <!-- Soal 2 -->
+                    <div class="space-y-2">
+                        <label class="block font-semibold text-gray-800">2. Bagaimanakah arah garis gaya listrik pada muatan positif dan muatan negatif? Jelaskan perbedaannya!</label>
+                        <textarea name="jawaban_2" rows="3" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3" placeholder="Tuliskan jawaban kelompokmu di sini..." required=""></textarea>
+                    </div>
+
+                    <!-- Soal 3 (Baru: Menggambar Medan) -->
+                    <div class="space-y-2">
+                        <label class="block font-semibold text-gray-800">
+                            3. Gambarkan pola garis gaya listrik pada dua muatan yang <strong>sejenis</strong> (positif-positif) dan <strong>tidak sejenis</strong> (positif-negatif) jika saling didekatkan! <br>
+                            <span class="text-sm text-gray-500 font-normal italic">(Deskripsikan secara rinci, atau <strong>Copy-Paste (Ctrl+V) gambar</strong> ke dalam kotak di bawah ini).</span>
+                        </label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-2 min-h-[160px] flex flex-col bg-gray-50 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+                            <div id="jawaban_3_div" contenteditable="true" class="w-full h-full min-h-[150px] bg-transparent border-none focus:outline-none p-2 text-gray-800" data-placeholder="Ketik penjelasan atau Paste (Ctrl+V) gambar dari Word/Paint/Screenshot di sini..."><br></div>
+                        </div>
+                    </div>
+
+                    <!-- Soal 4 (Sebelumnya Soal 3) -->
+                    <div class="space-y-2">
+                        <label class="block font-semibold text-gray-800">
+                            4. Sebuah titik P berada pada jarak 3 cm dari muatan positif sebesar <mjx-container class="MathJax CtxtMenu_Attached_0" jax="CHTML" style="font-size: 123.5%; position: relative;" tabindex="0" ctxtmenu_counter="3"><mjx-math class="MJX-TEX" aria-hidden="true"><mjx-mn class="mjx-n"><mjx-c class="mjx-c32"></mjx-c></mjx-mn><mjx-mo class="mjx-n" space="3"><mjx-c class="mjx-cD7"></mjx-c></mjx-mo><mjx-msup space="3"><mjx-mn class="mjx-n"><mjx-c class="mjx-c31"></mjx-c><mjx-c class="mjx-c30"></mjx-c></mjx-mn><mjx-script style="vertical-align: 0.393em;"><mjx-texatom size="s" texclass="ORD"><mjx-mo class="mjx-n"><mjx-c class="mjx-c2212"></mjx-c></mjx-mo><mjx-mn class="mjx-n"><mjx-c class="mjx-c36"></mjx-c></mjx-mn></mjx-texatom></mjx-script></mjx-msup></mjx-math><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML"><mn>2</mn><mo>×</mo><msup><mn>10</mn><mrow data-mjx-texclass="ORD"><mo>−</mo><mn>6</mn></mrow></msup></math></mjx-assistive-mml></mjx-container> Coulomb. <br>
+                            Hitunglah besar kuat medan listrik di titik P tersebut! <br>
+                            <span class="text-sm text-gray-500 font-normal">Diketahui konstanta <mjx-container class="MathJax CtxtMenu_Attached_0" jax="CHTML" style="font-size: 123.6%; position: relative;" tabindex="0" ctxtmenu_counter="4"><mjx-math class="MJX-TEX" aria-hidden="true"><mjx-mi class="mjx-i"><mjx-c class="mjx-c1D458 TEX-I"></mjx-c></mjx-mi><mjx-mo class="mjx-n" space="4"><mjx-c class="mjx-c3D"></mjx-c></mjx-mo><mjx-mn class="mjx-n" space="4"><mjx-c class="mjx-c39"></mjx-c></mjx-mn><mjx-mo class="mjx-n" space="3"><mjx-c class="mjx-cD7"></mjx-c></mjx-mo><mjx-msup space="3"><mjx-mn class="mjx-n"><mjx-c class="mjx-c31"></mjx-c><mjx-c class="mjx-c30"></mjx-c></mjx-mn><mjx-script style="vertical-align: 0.393em;"><mjx-mn class="mjx-n" size="s"><mjx-c class="mjx-c39"></mjx-c></mjx-mn></mjx-script></mjx-msup><mjx-mstyle><mjx-mspace style="width: 0.167em;"></mjx-mspace></mjx-mstyle><mjx-msup><mjx-mtext class="mjx-n"><mjx-c class="mjx-c4E"></mjx-c><mjx-c class="mjx-c6D"></mjx-c></mjx-mtext><mjx-script style="vertical-align: 0.41em;"><mjx-mn class="mjx-n" size="s"><mjx-c class="mjx-c32"></mjx-c></mjx-mn></mjx-script></mjx-msup><mjx-texatom texclass="ORD"><mjx-mo class="mjx-n"><mjx-c class="mjx-c2F"></mjx-c></mjx-mo></mjx-texatom><mjx-msup><mjx-mtext class="mjx-n"><mjx-c class="mjx-c43"></mjx-c></mjx-mtext><mjx-script style="vertical-align: 0.432em;"><mjx-mn class="mjx-n" size="s"><mjx-c class="mjx-c32"></mjx-c></mjx-mn></mjx-script></mjx-msup></mjx-math><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>k</mi><mo>=</mo><mn>9</mn><mo>×</mo><msup><mn>10</mn><mn>9</mn></msup><mstyle scriptlevel="0"><mspace width="0.167em"></mspace></mstyle><msup><mtext>Nm</mtext><mn>2</mn></msup><mrow data-mjx-texclass="ORD"><mo>/</mo></mrow><msup><mtext>C</mtext><mn>2</mn></msup></math></mjx-assistive-mml></mjx-container>.</span>
+                        </label>
+                        <textarea name="jawaban_4" rows="4" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3" placeholder="Tuliskan langkah-langkah penyelesaian dan hasil akhirmu di sini..." required=""></textarea>
+                    </div>
+                    
+                    <!-- Kesimpulan -->
+                    <div class="space-y-2">
+                        <label class="block font-semibold text-gray-800">D. Kesimpulan</label>
+                        <p class="text-sm text-gray-600">Berdasarkan kegiatan diskusi hari ini, kesimpulan apa yang dapat kalian ambil tentang medan listrik?</p>
+                        <textarea name="kesimpulan" rows="3" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3" placeholder="Tuliskan kesimpulan akhir kelompok..." required=""></textarea>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Action Buttons (Hidden when printing PDF) -->
+        <div class="no-print flex flex-col sm:flex-row gap-4 justify-center items-center mt-6">
+            <button type="button" onclick="submitData()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-200 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                Simpan &amp; Kumpulkan
+            </button>
+            <button type="button" onclick="downloadPDF()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-200 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Download PDF
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Custom Modal for Alerts -->
+    <div id="modal-overlay">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4 text-center transform transition-all">
+            <div id="modal-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900 mb-2">Sukses!</h3>
+            <p id="modal-message" class="text-sm text-gray-500 mb-6">Data berhasil disimpan.</p>
+            <button onclick="closeModal()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:text-sm">
+                Tutup
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Data Siswa (Diambil sebagian dari gambar, silakan lengkapi di Apps Script nantinya)
+        const studentData = {
+            "9E": [
+                { no: 1, name: "AISY SYAHARANI AZ ZAHI" },
+                { no: 2, name: "AFIFAH AZ-ZAHRA" },
+                { no: 3, name: "ALYA SALWA RAMADHANI" },
+                { no: 4, name: "AURA KEISHA GEMILANG" },
+                { no: 5, name: "CALYA NABILA KESNARA WARDANA" },
+                { no: 6, name: "JEBING PUTRI SUATMAJA" },
+                { no: 7, name: "JINAN MUKTI SALWAA KHANSA" },
+                { no: 8, name: "EVELYN GISELLA PUTRI B." },
+                { no: 21, name: "NAIRA EZZATASHANA" },
+                { no: 22, name: "NAJWA HATIFA UZZAHRA" }
+            ],
+            "9G": [
+                { no: 1, name: "AFIFA ADILLA HUSNA" },
+                { no: 2, name: "AKIFA NAILA ANDANI" },
+                { no: 3, name: "ALYA ZAHRAH SAKHIA" },
+                { no: 4, name: "ANIKA EL ZAHRA FATHONI" },
+                { no: 5, name: "AQILA SALSABILA FAIZA P." },
+                { no: 6, name: "ATIQAH NUFA DZAHABIYYA" },
+                { no: 21, name: "KARTIKA PUTRI TUNGGADEWI" }
+            ],
+            "9L": [
+                { no: 1, name: "AHMAD WAFI ALIFUDIN" },
+                { no: 2, name: "ALIF BHAL HIZZA SUNHAJI" },
+                { no: 3, name: "ALVITO SEPTIAN VIRENDRA" },
+                { no: 4, name: "ANISAH ARIYYAH NADHEERA" },
+                { no: 5, name: "ARKA ZIDAN BASKARA" },
+                { no: 6, name: "ARYASATYA PUTUT H.Q." },
+                { no: 29, name: "MUHAMMAD RAVINDRA A." }
+            ],
+            "9K": [
+                { no: 1, name: "ABIDA NAFISA" },
+                { no: 2, name: "AFIF KAWAKIB FATIH AMERTA" },
+                { no: 3, name: "AHMAD ABDIT GUNAWAN" },
+                { no: 4, name: "AIKO SHAQILA RANIA P." },
+                { no: 5, name: "AKHDAN HARITS KHALILULLAH" },
+                { no: 6, name: "AKMA MUMTAZ IUM" },
+                { no: 24, name: "MUHAMMAD RAYHAN AL BARRA" }
+            ]
+        };
+
+        // Initialize Group Member Rows
+        const maxMembers = 4;
+        const container = document.getElementById('group-members-container');
+
+        for (let i = 1; i <= maxMembers; i++) {
+            const memberHtml = `
+                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-2">
+                    <span class="font-semibold text-sm text-gray-700 bg-gray-100 px-2 py-1 rounded w-max">Anggota ${i} ${i===1? '(Ketua)' : ''}</span>
+                    
+                    <div class="flex gap-2">
+                        <div class="w-1/3">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Kelas</label>
+                            <select id="kelas_${i}" onchange="updateNames(${i})" class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 p-2" ${i===1 ? 'required' : ''}>
+                                <option value="">-- Pilih --</option>
+                                ${Object.keys(studentData).map(k => `<option value="${k}">${k}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="w-2/3">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">No. Presensi</label>
+                            <input type="text" id="presensi_${i}" class="w-full text-sm rounded-md border-gray-300 bg-gray-100 shadow-sm p-2 text-center font-bold text-blue-600" readonly placeholder="-">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Nama Siswa</label>
+                        <select id="nama_${i}" onchange="updatePresensi(${i})" class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 p-2" ${i===1 ? 'required' : ''}>
+                            <option value="">-- Pilih Kelas Dahulu --</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += memberHtml;
+        }
+
+        // Logic for Dynamic Dropdowns
+        function updateNames(index) {
+            const kelasSelect = document.getElementById(`kelas_${index}`);
+            const namaSelect = document.getElementById(`nama_${index}`);
+            const presensiInput = document.getElementById(`presensi_${index}`);
+            
+            const selectedClass = kelasSelect.value;
+            
+            // Reset fields
+            namaSelect.innerHTML = '<option value="">-- Pilih Nama --</option>';
+            presensiInput.value = '';
+
+            if (selectedClass && studentData[selectedClass]) {
+                studentData[selectedClass].forEach(student => {
+                    const option = document.createElement('option');
+                    option.value = student.name;
+                    // Storing presence number in dataset to easily fetch it later
+                    option.dataset.no = student.no; 
+                    option.textContent = student.name;
+                    namaSelect.appendChild(option);
+                });
+            } else {
+                namaSelect.innerHTML = '<option value="">-- Kosong --</option>';
+            }
+        }
+
+        function updatePresensi(index) {
+            const namaSelect = document.getElementById(`nama_${index}`);
+            const presensiInput = document.getElementById(`presensi_${index}`);
+            
+            if (namaSelect.selectedIndex > 0) {
+                const selectedOption = namaSelect.options[namaSelect.selectedIndex];
+                presensiInput.value = selectedOption.dataset.no;
+            } else {
+                presensiInput.value = '';
+            }
+        }
+
+        // Custom UI Alert System
+        function showModal(title, message, isError = false) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            
+            const icon = document.getElementById('modal-icon');
+            if(isError) {
+                icon.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4";
+                icon.innerHTML = `<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+            } else {
+                icon.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4";
+                icon.innerHTML = `<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+            }
+
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+        }
+
+        // Export to PDF Logic
+        function downloadPDF() {
+            // Basic validation: ensure group leader is filled
+            if(!document.getElementById('kelas_1').value || !document.getElementById('nama_1').value) {
+                showModal("Data Tidak Lengkap", "Silakan isi minimal Anggota 1 (Ketua) terlebih dahulu sebelum mengunduh PDF.", true);
+                return;
+            }
+
+            const element = document.getElementById('lkpd-document');
+            
+            // Add class to handle specific styling for PDF
+            element.classList.add('pdf-mode');
+
+            // Set filename based on group leader
+            const leaderName = document.getElementById('nama_1').value;
+            const leaderClass = document.getElementById('kelas_1').value;
+            const fileName = `LKPD_MedanListrik_${leaderClass}_${leaderName.replace(/\s+/g, '_')}.pdf`;
+
+            const opt = {
+                margin:       10,
+                filename:     fileName,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Generate PDF
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Remove pdf styling after download
+                element.classList.remove('pdf-mode');
+            });
+        }
+
+        // Submit Data to Google Apps Script Backend
+        function submitData() {
+            const form = document.getElementById('lkpd-form');
+            
+            // Validate HTML5 required fields
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Gather Data
+            let payload = {
+                timestamp: new Date().toISOString(),
+                anggota: [],
+                jawaban: {
+                    soal_1: document.getElementsByName('jawaban_1')[0].value,
+                    soal_2: document.getElementsByName('jawaban_2')[0].value,
+                    soal_3: document.getElementById('jawaban_3_div').innerHTML, // Mengambil isi teks dan gambar
+                    soal_4: document.getElementsByName('jawaban_4')[0].value,
+                    kesimpulan: document.getElementsByName('kesimpulan')[0].value
+                }
+            };
+
+            for(let i=1; i<=maxMembers; i++) {
+                const kls = document.getElementById(`kelas_${i}`).value;
+                const nm = document.getElementById(`nama_${i}`).value;
+                const no = document.getElementById(`presensi_${i}`).value;
+                
+                if(kls && nm) {
+                    payload.anggota.push({ kelas: kls, nama: nm, presensi: no });
+                }
+            }
+
+            // Integrasi ke Apps Script
+            // Jika aplikasi ini dijalankan di dalam Web App Apps Script, google.script.run akan tersedia
+            if (typeof google !== 'undefined' && google.script) {
+                // Tampilkan loading modal
+                document.getElementById('modal-title').innerText = "Menyimpan...";
+                document.getElementById('modal-message').innerText = "Sedang mengirim data ke Google Sheets...";
+                document.getElementById('modal-overlay').style.display = 'flex';
+
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        showModal("Berhasil!", "Tugas kelompok kalian sudah tersimpan di sistem Guru.");
+                    })
+                    .withFailureHandler(function(error) {
+                        showModal("Terjadi Kesalahan", "Gagal menyimpan data: " + error.message, true);
+                    })
+                    .simpanKeSheet(payload); // Ini akan memanggil fungsi simpanKeSheet(data) di Code.gs
+            } else {
+                // Simulasi jika dijalankan di browser biasa / preview mode
+                console.log("Data yang akan dikirim:", payload);
+                showModal("Simulasi Sukses", "Ini adalah tampilan pratinjau (Preview). Pada lingkungan Google Apps Script yang sebenarnya, data ini akan masuk ke Google Sheets.");
+            }
+        }
+    </script>
+
+</body></html>
